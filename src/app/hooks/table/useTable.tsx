@@ -1,8 +1,15 @@
-// Define a type for column configuration
-type ColumnConfig<T> = {
-  id: keyof T;
-  accessor: (row: T) => string;
-};
+import { ReactNode } from "react";
+
+// Define a type for the column configuration
+type ColumnConfig<T> =
+  | {
+      id: keyof T;
+      accessor: (row: T) => string;
+    }
+  | {
+      id: string;
+      cell: (row: T) => ReactNode;
+    };
 
 // Function to create column helper
 export function createColumnHelper<T>() {
@@ -10,6 +17,10 @@ export function createColumnHelper<T>() {
     accessor: (key: keyof T) => ({
       id: key,
       accessor: (row: T) => String(row[key]),
+    }),
+    display: ({ id, cell }: { id: string; cell: (row: T) => React.ReactNode }) => ({
+      id,
+      cell,
     }),
   };
 }
