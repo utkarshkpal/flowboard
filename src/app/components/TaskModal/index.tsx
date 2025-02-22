@@ -50,7 +50,7 @@ export default function TaskModal({ task }: { task?: Task }) {
 
     if (hasError) return;
 
-    addTask({ title, priority, status });
+    addTask({ title, priority, status, customFields: [] });
     resetForm();
     setIsDialogOpen(false);
   };

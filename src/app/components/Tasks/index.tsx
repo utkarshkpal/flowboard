@@ -1,5 +1,6 @@
 "use client";
 
+import CustomFieldsEditor from "@/app/components/CustomField";
 import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table/useTable";
-import { Task, useTaskStore } from "@/app/store/useTaskStore";
+import { CustomField, Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
 import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardCheck, Clock, Edit, Trash } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -26,37 +27,25 @@ import { priorityOrder, statusOrder } from "./constants";
 import Filters from "./filters";
 import Pagination from "./pagination";
 
-// const defaultData: Task[] = [
-//   {
-//     id: 1,
-//     title: "Task 1",
-//     status: "In Progress",
-//     priority: "High",
-//   },
-//   {
-//     id: 2,
-//     title: "Task 2",
-//     status: "Completed",
-//     priority: "Medium",
-//   },
-//   {
-//     id: 3,
-//     title: "Task 3",
-//     status: "Not Started",
-//     priority: "Low",
-//   },
-// ];
-
 const columnHelper = createColumnHelper<Task>();
 
 function Tasks() {
-  const { tasks, editingTaskId, setEditingTaskId, updateTask, deleteTask } = useTaskStore();
+  const {
+    tasks,
+    customFields,
+    editingTaskId,
+    setEditingTaskId,
+    updateTask,
+    deleteTask,
+    addCustomField,
+    removeCustomField,
+  } = useTaskStore();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [searchText, setSearchText] = useState(searchParams.get("filterText") || "");
-  const [status, setStatus] = useState(searchParams.get("filterStatus") || "all");
-  const [priority, setPriority] = useState(searchParams.get("filterPriority") || "all");
+  const [searchText, setSearchText] = useState(searchParams.get("searchText") || "");
+  const [status, setStatus] = useState(searchParams.get("status") || "all");
+  const [priority, setPriority] = useState(searchParams.get("priority") || "all");
 
   const editingTask = tasks.find((task) => task.id.toString() === editingTaskId);
 
@@ -66,6 +55,13 @@ function Tasks() {
   const [titleError, setTitleError] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [isCustomFieldDialogOpen, setIsCustomFieldDialogOpen] = useState(false);
+  const [localCustomFields, setLocalCustomFields] = useState<
+    Record<string, string | number | boolean>
+  >({});
+
+  console.log("tasks", tasks);
+  console.log("customFields", customFields);
 
   useEffect(() => {
     const query = new URLSearchParams();
@@ -92,9 +88,20 @@ function Tasks() {
   };
 
   useEffect(() => {
-    setLocalTitle(editingTask?.title || "");
-    setLocalPriority(editingTask?.priority || "medium");
-    setLocalStatus(editingTask?.status || "not_started");
+    if (editingTask) {
+      setLocalTitle(editingTask.title);
+      setLocalPriority(editingTask.priority);
+      setLocalStatus(editingTask.status);
+      setLocalCustomFields(
+        editingTask.customFields.reduce(
+          (acc, field) => {
+            acc[field.name] = field.value;
+            return acc;
+          },
+          {} as Record<string, string | number | boolean>,
+        ),
+      );
+    }
   }, [editingTask]);
 
   const handleEditClick = (task: Task) => {
@@ -102,7 +109,6 @@ function Tasks() {
   };
 
   const handleSaveClick = (taskId: string) => {
-    console.log(!localTitle.trim());
     if (!localTitle.trim()) {
       setTitleError("Title is required.");
       return;
@@ -115,6 +121,11 @@ function Tasks() {
         title: localTitle,
         priority: localPriority,
         status: localStatus,
+        customFields: Object.entries(localCustomFields).map(([name, value]) => ({
+          name,
+          value,
+          type: customFields[name]?.type || "text",
+        })),
       });
     }
     setEditingTaskId(null);
@@ -133,6 +144,14 @@ function Tasks() {
     setIsDeleteDialogOpen(false);
   };
 
+  const handleAddField = (field: CustomField) => {
+    addCustomField(field);
+  };
+
+  const handleRemoveField = (fieldName: string) => {
+    removeCustomField(fieldName);
+  };
+
   const columns = [
     columnHelper.accessor({
       key: "title",
@@ -146,6 +165,12 @@ function Tasks() {
       key: "priority",
       sortFn: (a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority),
     }),
+    ...Object.keys(customFields).map((fieldName) =>
+      columnHelper.display({
+        id: fieldName as keyof Task,
+        cell: () => <div>{fieldName}</div>,
+      }),
+    ),
     columnHelper.display({
       id: "actions",
       cell: (props) => (
@@ -249,6 +274,51 @@ function Tasks() {
             </Button>
           );
         default:
+          const field = row.original?.customFields?.find((f) => f.name === columnId);
+          if (field) {
+            switch (field.type) {
+              case "text":
+                return (
+                  <Input
+                    value={String(localCustomFields[columnId] || "")}
+                    onChange={(e) =>
+                      setLocalCustomFields((prev) => ({
+                        ...prev,
+                        [columnId]: e.target.value,
+                      }))
+                    }
+                  />
+                );
+              case "number":
+                return (
+                  <Input
+                    type="number"
+                    value={String(localCustomFields[columnId] || "")}
+                    onChange={(e) =>
+                      setLocalCustomFields((prev) => ({
+                        ...prev,
+                        [columnId]: Number(e.target.value),
+                      }))
+                    }
+                  />
+                );
+              case "checkbox":
+                return (
+                  <input
+                    type="checkbox"
+                    checked={Boolean(localCustomFields[columnId])}
+                    onChange={(e) =>
+                      setLocalCustomFields((prev) => ({
+                        ...prev,
+                        [columnId]: e.target.checked,
+                      }))
+                    }
+                  />
+                );
+              default:
+                return null;
+            }
+          }
           return null;
       }
     } else {
@@ -274,7 +344,15 @@ function Tasks() {
             </div>
           );
         default:
-          return row.original[columnId as keyof Task];
+          const field = row.original?.customFields?.find((f) => f.name === columnId);
+          if (field) {
+            return field.type === "checkbox" ? (
+              <input type="checkbox" checked={Boolean(field.value)} disabled />
+            ) : (
+              String(field.value)
+            );
+          }
+          return String(row.original[columnId as keyof Task] || "");
       }
     }
   };
@@ -302,6 +380,24 @@ function Tasks() {
 
   return (
     <div className="p-4">
+      <Button onClick={() => setIsCustomFieldDialogOpen(true)}>Manage Custom Fields</Button>
+
+      <Dialog open={isCustomFieldDialogOpen} onOpenChange={setIsCustomFieldDialogOpen}>
+        <DialogContent>
+          <DialogTitle>Manage Custom Fields</DialogTitle>
+          <CustomFieldsEditor
+            customFields={customFields}
+            onAddField={handleAddField}
+            onRemoveField={handleRemoveField}
+          />
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsCustomFieldDialogOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Filters
         filters={{
           searchText,
