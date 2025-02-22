@@ -1,3 +1,4 @@
+import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {
@@ -8,6 +9,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { CustomField } from "@/app/store/useTaskStore";
+import { Trash } from "lucide-react";
 import { useState } from "react";
 
 interface CustomFieldsEditorProps {
@@ -24,26 +26,51 @@ export default function CustomFieldsEditor({
   const [fieldName, setFieldName] = useState("");
   const [fieldType, setFieldType] = useState<CustomField["type"]>("text");
   const [defaultValue, setDefaultValue] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const resetForm = () => {
     setFieldName("");
     setDefaultValue("");
+    setErrorMessage("");
   };
 
   const handleAddField = () => {
-    if (!fieldName.trim()) return;
+    if (!fieldName.trim()) {
+      setErrorMessage("Field name is required");
+      return;
+    }
     onAddField({ name: fieldName, type: fieldType, value: defaultValue });
     resetForm();
   };
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-2">Custom Fields</h3>
-      <div className="flex gap-2 mb-4">
+      <h3 className="text-sm font-semibold mt-8 mb-4">Custom Fields</h3>
+      <ul>
+        {Object.keys(customFields).map((key) => (
+          <li key={key} className="flex justify-between items-center mb-2">
+            <span className="text-sm">
+              {customFields[key].name}
+              <Badge variant="outline" className="ml-4">
+                {customFields[key].type}
+              </Badge>
+            </span>
+            <Trash
+              className="text-red-500 cursor-pointer w-4 h-4"
+              onClick={() => onRemoveField(key)}
+            />
+          </li>
+        ))}
+      </ul>
+      <h3 className="text-sm font-semibold mt-8 mb-2">Add Custom Field</h3>
+      <div className="flex gap-2 mb-4 mt-4">
         <Input
           placeholder="Field Name"
           value={fieldName}
-          onChange={(e) => setFieldName(e.target.value)}
+          onChange={(e) => {
+            setFieldName(e.target.value);
+            setErrorMessage("");
+          }}
         />
         <Select
           value={fieldType}
@@ -84,18 +111,7 @@ export default function CustomFieldsEditor({
         )}
         <Button onClick={handleAddField}>Add Field</Button>
       </div>
-      <ul>
-        {Object.keys(customFields).map((key) => (
-          <li key={key} className="flex justify-between items-center mb-2">
-            <span>
-              {customFields[key].name} ({customFields[key].type})
-            </span>
-            <Button variant="outline" onClick={() => onRemoveField(key)}>
-              Remove
-            </Button>
-          </li>
-        ))}
-      </ul>
+      {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
     </div>
   );
 }

@@ -83,9 +83,14 @@ export const useTaskStore = create<TaskStore>((set) => {
       }),
     addTask: (task) =>
       set((state) => {
+        const taskWithCustomFields = {
+          id: state.tasks.length + 1,
+          ...task,
+          customFields: Object.values(state.customFields),
+        };
         const newState = {
           ...state,
-          tasks: [{ id: state.tasks.length + 1, ...task }, ...state.tasks],
+          tasks: [taskWithCustomFields, ...state.tasks],
         };
 
         logChange("addTask", state, newState);
@@ -141,6 +146,7 @@ export const useTaskStore = create<TaskStore>((set) => {
         };
         logChange("removeCustomField", state, newState);
         saveTasksToLocalStorage(newState.tasks);
+        saveCustomFieldsToLocalStorage(newState.customFields);
         return newState;
       }),
   };

@@ -20,7 +20,16 @@ import {
 import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table/useTable";
 import { CustomField, Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
-import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardCheck, Clock, Edit, Trash } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ClipboardCheck,
+  Clock,
+  Edit,
+  FileQuestion,
+  Trash,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { priorityOrder, statusOrder } from "./constants";
@@ -166,9 +175,17 @@ function Tasks() {
       sortFn: (a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority),
     }),
     ...Object.keys(customFields).map((fieldName) =>
-      columnHelper.display({
-        id: fieldName as keyof Task,
-        cell: () => <div>{fieldName}</div>,
+      columnHelper.accessor({
+        key: fieldName as keyof Task,
+
+        sortFn: (a, b) => {
+          const aValue = a.customFields.find((f) => f.name === fieldName)?.value || "";
+          const bValue = b.customFields.find((f) => f.name === fieldName)?.value || "";
+          if (typeof aValue === "string" && typeof bValue === "string") {
+            return aValue.localeCompare(bValue);
+          }
+          return aValue > bValue ? 1 : -1;
+        },
       }),
     ),
     columnHelper.display({
@@ -346,6 +363,9 @@ function Tasks() {
         default:
           const field = row.original?.customFields?.find((f) => f.name === columnId);
           if (field) {
+            if (field.value === undefined || field.value === null || field.value === "") {
+              return <FileQuestion className="w-4 h-4 text-gray-500" />;
+            }
             return field.type === "checkbox" ? (
               <input type="checkbox" checked={Boolean(field.value)} disabled />
             ) : (
