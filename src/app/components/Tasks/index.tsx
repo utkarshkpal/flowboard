@@ -24,6 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { priorityOrder, statusOrder } from "./constants";
 import Filters from "./filters";
+import Pagination from "./pagination";
 
 // const defaultData: Task[] = [
 //   {
@@ -197,8 +198,6 @@ function Tasks() {
     if (!column) return null;
 
     if (editingTaskId === row.original.id.toString()) {
-      // Local state for each input field
-
       switch (columnId) {
         case "title":
           return (
@@ -253,7 +252,6 @@ function Tasks() {
           return null;
       }
     } else {
-      // Render non-editable cells
       switch (columnId) {
         case "status":
           const formattedStatus = formatStatus(row.original.status);
@@ -284,7 +282,7 @@ function Tasks() {
   const renderSortIcon = (columnId: string) => {
     const column = columns.find((col) => col.id === columnId);
     if (!column || !("sortFn" in column) || !column.sortFn) {
-      return null; // Do not render an icon if there's no sort function
+      return null;
     }
 
     switch (true) {
@@ -297,6 +295,11 @@ function Tasks() {
     }
   };
 
+  const handlePageSizeChange = (pageSize: number) => {
+    table.setPageSize(pageSize);
+    table.setCurrentPage(1);
+  };
+
   return (
     <div className="p-4">
       <Filters
@@ -307,6 +310,7 @@ function Tasks() {
         }}
         onFilterChange={handleFilterChange}
       />
+
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -348,6 +352,13 @@ function Tasks() {
           ))}
         </tbody>
       </table>
+      <Pagination
+        currentPage={table.currentPage}
+        totalPages={table.totalPages}
+        onPageChange={(page: number) => table.setCurrentPage(page)}
+        onPageSizeChange={handlePageSizeChange}
+        pageSize={table.pageSize}
+      />
 
       {isDeleteDialogOpen && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

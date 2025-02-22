@@ -1,6 +1,5 @@
 import { ReactNode, useState } from "react";
 
-// Define a type for the column configuration
 type ColumnConfig<T> =
   | {
       id: keyof T;
@@ -13,7 +12,6 @@ type ColumnConfig<T> =
       sortFn?: (a: T, b: T) => number;
     };
 
-// Function to create column helper
 export function createColumnHelper<T>() {
   return {
     accessor: ({ key, sortFn }: { key: keyof T; sortFn?: (a: T, b: T) => number }) => ({
@@ -37,7 +35,6 @@ export function createColumnHelper<T>() {
   };
 }
 
-// Function to render cell content
 export function flexRender<T>(cellValue: T): T {
   if (typeof cellValue === "function") {
     return (cellValue as () => T)();
@@ -45,7 +42,6 @@ export function flexRender<T>(cellValue: T): T {
   return cellValue;
 }
 
-// Function to get core row model
 export function getCoreRowModel<T>(
   data: T[],
   columns: ColumnConfig<T>[],
@@ -71,7 +67,6 @@ export function getCoreRowModel<T>(
   };
 }
 
-// Function to get header groups
 export function getHeaderGroups<T>(columns: ColumnConfig<T>[]) {
   return [
     {
@@ -84,11 +79,12 @@ export function getHeaderGroups<T>(columns: ColumnConfig<T>[]) {
   ];
 }
 
-// Hook to use the table
 export function useReactTable<T>(options: { data: T[]; columns: ColumnConfig<T>[] }) {
   const { data, columns } = options;
   const [sortColumnId, setSortColumnId] = useState<keyof T | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const toggleSortOrder = (columnId: keyof T) => {
     if (sortColumnId === columnId) {
@@ -102,12 +98,22 @@ export function useReactTable<T>(options: { data: T[]; columns: ColumnConfig<T>[
   const coreRowModel = getCoreRowModel(data, columns, sortColumnId, sortOrder);
   const headerGroups = getHeaderGroups(columns);
 
+  const paginatedRows = coreRowModel.rows.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
   return {
-    getRowModel: () => coreRowModel,
+    getRowModel: () => ({ ...coreRowModel, rows: paginatedRows }),
     getColumnModel: () => columns,
     getHeaderGroups: () => headerGroups,
     toggleSortOrder,
     sortColumnId,
     sortOrder,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages: Math.ceil(coreRowModel.rows.length / pageSize),
   };
 }

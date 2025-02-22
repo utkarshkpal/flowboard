@@ -3,8 +3,8 @@ import Tasks from "@/app/components/Tasks";
 
 export default function Home() {
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
       <TaskModal />
 
       <Tasks />
