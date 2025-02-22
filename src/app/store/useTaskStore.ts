@@ -4,7 +4,7 @@ import { create } from "zustand";
 export type Task = {
   id: number;
   title: string;
-  priority: "low" | "medium" | "high";
+  priority: "none" | "low" | "medium" | "high" | "urgent";
   status: "not_started" | "in_progress" | "completed";
 };
 

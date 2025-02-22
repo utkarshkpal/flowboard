@@ -15,14 +15,14 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import clsx from "clsx";
 import { useState } from "react";
 
-export default function TaskModal({ isEditing, task }: { isEditing?: boolean; task?: Task }) {
+export default function TaskModal({ task }: { task?: Task }) {
   const [title, setTitle] = useState(task?.title || "");
   const [priority, setPriority] = useState(task?.priority || "medium");
   const [status, setStatus] = useState(task?.status || "not_started");
   const [titleError, setTitleError] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { tasks, addTask, updateTask } = useTaskStore();
+  const { addTask } = useTaskStore();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -50,14 +50,8 @@ export default function TaskModal({ isEditing, task }: { isEditing?: boolean; ta
 
     if (hasError) return;
 
-    if (isEditing) {
-      const taskToUpdate = tasks.find((t) => t.id === task?.id);
-      if (taskToUpdate) {
-        updateTask(taskToUpdate.id, { title, priority, status });
-      }
-    } else {
-      addTask({ title, priority, status });
-    }
+    addTask({ title, priority, status });
+    resetForm();
     setIsDialogOpen(false);
   };
 
@@ -65,15 +59,15 @@ export default function TaskModal({ isEditing, task }: { isEditing?: boolean; ta
     <Dialog open={isDialogOpen} onOpenChange={(open) => handleOpenChange(open)}>
       <DialogTrigger asChild>
         <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-          {isEditing ? "Edit Task" : "Create Task"}
+          Create Task
         </Button>
       </DialogTrigger>
       <DialogContent>
         <VisuallyHidden>
-          <DialogTitle>{isEditing ? "Edit Task" : "Create Task"}</DialogTitle>
+          <DialogTitle>Create Task</DialogTitle>
         </VisuallyHidden>
 
-        <h2 className="text-lg font-semibold mb-4">{isEditing ? "Edit Task" : "Create Task"}</h2>
+        <h2 className="text-lg font-semibold mb-4">Create Task</h2>
 
         <div className="space-y-4">
           <div>
@@ -134,7 +128,7 @@ export default function TaskModal({ isEditing, task }: { isEditing?: boolean; ta
           <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>{isEditing ? "Save Changes" : "Create"}</Button>
+          <Button onClick={handleSubmit}>Create</Button>
         </div>
       </DialogContent>
     </Dialog>

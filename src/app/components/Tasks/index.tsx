@@ -19,9 +19,10 @@ import {
 import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table/useTable";
 import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
-import { ClipboardCheck, Clock, Edit, Trash } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardCheck, Clock, Edit, Trash } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { priorityOrder, statusOrder } from "./constants";
 import Filters from "./filters";
 
 // const defaultData: Task[] = [
@@ -132,9 +133,18 @@ function Tasks() {
   };
 
   const columns = [
-    columnHelper.accessor("title"),
-    columnHelper.accessor("status"),
-    columnHelper.accessor("priority"),
+    columnHelper.accessor({
+      key: "title",
+      sortFn: (a, b) => a.title.localeCompare(b.title),
+    }),
+    columnHelper.accessor({
+      key: "status",
+      sortFn: (a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
+    }),
+    columnHelper.accessor({
+      key: "priority",
+      sortFn: (a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority),
+    }),
     columnHelper.display({
       id: "actions",
       cell: (props) => (
@@ -271,6 +281,22 @@ function Tasks() {
     }
   };
 
+  const renderSortIcon = (columnId: string) => {
+    const column = columns.find((col) => col.id === columnId);
+    if (!column || !("sortFn" in column) || !column.sortFn) {
+      return null; // Do not render an icon if there's no sort function
+    }
+
+    switch (true) {
+      case table.sortColumnId === columnId && table.sortOrder === "asc":
+        return <ArrowUp className="ml-2 w-4 h-4" />;
+      case table.sortColumnId === columnId && table.sortOrder === "desc":
+        return <ArrowDown className="ml-2 w-4 h-4" />;
+      default:
+        return <ArrowUpDown className="ml-2 w-4 h-4" />;
+    }
+  };
+
   return (
     <div className="p-4">
       <Filters
@@ -285,18 +311,28 @@ function Tasks() {
         <thead className="bg-gray-50">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  <div className="flex items-center">
-                    {header.id === "title" && <ClipboardCheck className="mr-2" />}
-                    {header.id === "priority" && <Clock className="mr-2" />}
-                    {header.id === "actions" ? "Actions" : capitalize(flexRender(header.render()))}
-                  </div>
-                </th>
-              ))}
+              {headerGroup.headers.map((header) => {
+                const column = columns.find((col) => col.id === header.id);
+                const isSortable = column && column.sortFn;
+                return (
+                  <th
+                    key={header.id}
+                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                      isSortable ? "cursor-pointer" : ""
+                    }`}
+                    onClick={() => isSortable && table.toggleSortOrder(header.id as keyof Task)}
+                  >
+                    <div className="flex items-center">
+                      {header.id === "title" && <ClipboardCheck className="mr-2" />}
+                      {header.id === "priority" && <Clock className="mr-2" />}
+                      {header.id === "actions"
+                        ? "Actions"
+                        : capitalize(flexRender(header.render()))}
+                      {isSortable && renderSortIcon(header.id)}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
