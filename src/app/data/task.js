@@ -9,7 +9,7 @@ const tasks = [
     id: 2,
     title: "Fix login page bug",
     status: "not_started",
-    priority: "none",
+    priority: "low",
   },
   {
     id: 3,

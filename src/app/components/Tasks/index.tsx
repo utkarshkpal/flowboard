@@ -20,7 +20,9 @@ import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table
 import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
 import { ClipboardCheck, Clock, Edit, Trash } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Filters from "./filters";
 
 // const defaultData: Task[] = [
 //   {
@@ -47,6 +49,12 @@ const columnHelper = createColumnHelper<Task>();
 
 function Tasks() {
   const { tasks, editingTaskId, setEditingTaskId, updateTask, deleteTask } = useTaskStore();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [searchText, setSearchText] = useState(searchParams.get("filterText") || "");
+  const [status, setStatus] = useState(searchParams.get("filterStatus") || "all");
+  const [priority, setPriority] = useState(searchParams.get("filterPriority") || "all");
 
   const editingTask = tasks.find((task) => task.id.toString() === editingTaskId);
 
@@ -56,6 +64,30 @@ function Tasks() {
   const [titleError, setTitleError] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    const query = new URLSearchParams();
+    if (searchText) query.set("searchText", searchText);
+    if (status !== "all") query.set("status", status);
+    if (priority !== "all") query.set("priority", priority);
+    router.replace(`?${query.toString()}`);
+  }, [searchText, status, priority, router]);
+
+  const handleFilterChange = (type: string, value: string) => {
+    switch (type) {
+      case "text":
+        setSearchText(value);
+        break;
+      case "status":
+        setStatus(value);
+        break;
+      case "priority":
+        setPriority(value);
+        break;
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     setLocalTitle(editingTask?.title || "");
@@ -112,9 +144,21 @@ function Tasks() {
       ),
     }),
   ];
+  const filteredTasks = tasks.filter((task) => {
+    if (searchText) {
+      return task.title.toLowerCase().includes(searchText.toLowerCase());
+    }
+    if (status !== "all") {
+      return task.status === status;
+    }
+    if (priority !== "all") {
+      return task.priority === priority;
+    }
+    return true;
+  });
 
   const table = useReactTable<Task>({
-    data: tasks,
+    data: filteredTasks,
     columns,
   });
 
@@ -229,6 +273,14 @@ function Tasks() {
 
   return (
     <div className="p-4">
+      <Filters
+        filters={{
+          searchText,
+          status,
+          priority,
+        }}
+        onFilterChange={handleFilterChange}
+      />
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           {table.getHeaderGroups().map((headerGroup) => (
