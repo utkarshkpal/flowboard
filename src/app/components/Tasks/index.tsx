@@ -1,6 +1,13 @@
 "use client";
 
 import { Button } from "@/app/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 import { Input } from "@/app/components/ui/input";
 import {
   Select,
@@ -47,6 +54,8 @@ function Tasks() {
   const [localPriority, setLocalPriority] = useState<Task["priority"]>("medium");
   const [localStatus, setLocalStatus] = useState<Task["status"]>("not_started");
   const [titleError, setTitleError] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalTitle(editingTask?.title || "");
@@ -78,7 +87,16 @@ function Tasks() {
   };
 
   const handleDeleteClick = (taskId: string) => {
-    deleteTask(Number(taskId));
+    setTaskToDelete(taskId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (taskToDelete) {
+      deleteTask(Number(taskToDelete));
+      setTaskToDelete(null);
+    }
+    setIsDeleteDialogOpen(false);
   };
 
   const columns = [
@@ -242,6 +260,23 @@ function Tasks() {
           ))}
         </tbody>
       </table>
+
+      {isDeleteDialogOpen && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Delete</DialogTitle>
+            </DialogHeader>
+            <p>Are you sure you want to delete this task?</p>
+            <DialogFooter>
+              <Button className="bg-red-500 text-white" onClick={confirmDelete}>
+                Delete
+              </Button>
+              <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
