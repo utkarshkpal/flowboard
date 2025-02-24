@@ -21,7 +21,7 @@ function DeleteDialog({ isOpen, onClose, onConfirm }: DeleteDialogProps) {
         </DialogHeader>
         <p>Are you sure you want to delete this task?</p>
         <DialogFooter>
-          <Button className="bg-red-500 text-white" onClick={onConfirm}>
+          <Button variant="destructive" onClick={onConfirm}>
             Delete
           </Button>
           <Button onClick={onClose}>Cancel</Button>

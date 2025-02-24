@@ -1,7 +1,8 @@
 "use client";
+import { Button } from "@/app/components/ui/button";
 import { useTaskStore } from "@/app/store/useTaskStore";
+import { Redo, Undo } from "lucide-react";
 import { useEffect } from "react";
-
 function UndoRedoToolbar() {
   const { undo, redo, undoStack, redoStack } = useTaskStore();
   const canUndo = undoStack.length > 0;
@@ -22,12 +23,12 @@ function UndoRedoToolbar() {
 
   return (
     <div className="flex gap-4 p-4">
-      <button disabled={!canUndo} onClick={undo} className="px-4 py-2 bg-gray-200 rounded">
-        Undo
-      </button>
-      <button disabled={!canRedo} onClick={redo} className="px-4 py-2 bg-gray-200 rounded">
-        Redo
-      </button>
+      <Button disabled={!canUndo} onClick={undo} className="px-4 py-2  rounded">
+        <Undo className="w-4 h-4 mr-2" />
+      </Button>
+      <Button disabled={!canRedo} onClick={redo} className="px-4 py-2  rounded">
+        <Redo className="w-4 h-4 mr-2" />
+      </Button>
     </div>
   );
 }

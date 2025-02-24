@@ -16,6 +16,20 @@ import clsx from "clsx";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
+const priorityOptions = [
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" },
+  { label: "Urgent", value: "urgent" },
+  { label: "None", value: "none" },
+];
+
+const statusOptions = [
+  { label: "Not Started", value: "not_started" },
+  { label: "In Progress", value: "in_progress" },
+  { label: "Completed", value: "completed" },
+];
+
 export default function TaskModal({ task }: { task?: Task }) {
   const [title, setTitle] = useState(task?.title || "");
   const [priority, setPriority] = useState(task?.priority || "medium");
@@ -39,7 +53,8 @@ export default function TaskModal({ task }: { task?: Task }) {
     setTitleError("");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     let hasError = false;
 
     if (!title.trim()) {
@@ -71,67 +86,88 @@ export default function TaskModal({ task }: { task?: Task }) {
 
         <h2 className="text-lg font-semibold mb-4">Create Task</h2>
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="title"
-              placeholder="Task Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={clsx("mt-1", { "border-red-500": titleError })}
-              required
-            />
-            {titleError && <p className="text-red-500 text-xs mt-1">{titleError}</p>}
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="title"
+                placeholder="Task Title"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (titleError) {
+                    setTitleError("");
+                  }
+                }}
+                className={clsx("mt-1", { "border-red-500": titleError })}
+              />
+              {titleError && (
+                <p
+                  id="title-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-red-500 text-xs mt-1"
+                >
+                  {titleError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex space-x-4">
+              <div className="flex-1">
+                <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
+                  Priority
+                </label>
+                <Select
+                  onValueChange={(priority: Task["priority"]) => setPriority(priority)}
+                  defaultValue={priority}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorityOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <Select
+                  onValueChange={(status: Task["status"]) => setStatus(status)}
+                  defaultValue={status}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-              Priority
-            </label>
-            <Select
-              onValueChange={(priority: Task["priority"]) => setPriority(priority)}
-              defaultValue={priority}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex justify-end gap-2 mt-10">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Create</Button>
           </div>
-
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <Select
-              onValueChange={(status: Task["status"]) => setStatus(status)}
-              defaultValue={status}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="not_started">Not Started</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>Create</Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

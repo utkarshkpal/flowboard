@@ -60,8 +60,7 @@ function Tasks() {
     Record<string, string | number | boolean>
   >({});
 
-  console.log("tasks", tasks);
-  console.log("customFields", customFields);
+  console.log("render");
 
   useEffect(() => {
     const query = new URLSearchParams();
@@ -274,6 +273,7 @@ function Tasks() {
         case "actions":
           return (
             <Button
+              variant="outline"
               onClick={() => {
                 handleSaveClick(row.original.id.toString());
               }}
@@ -345,8 +345,14 @@ function Tasks() {
         case "actions":
           return (
             <div className="flex space-x-2">
-              <Button onClick={() => handleEditClick(row.original)}>Edit</Button>
-              <Button onClick={() => handleDeleteClick(row.original.id.toString())}>
+              <Button variant="outline" onClick={() => handleEditClick(row.original)}>
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-500"
+                onClick={() => handleDeleteClick(row.original.id.toString())}
+              >
                 <Trash className="w-4 h-4" />
               </Button>
             </div>
@@ -391,9 +397,15 @@ function Tasks() {
 
   return (
     <div className="p-4">
+      {titleError && (
+        <div role="alert" aria-live="polite" className="text-red-500 mb-2">
+          {titleError}
+        </div>
+      )}
+
       <div className="flex justify-between gap-2 mb-4">
         <TaskModal />
-        <Button onClick={() => setIsCustomFieldDialogOpen(true)}>
+        <Button onClick={() => setIsCustomFieldDialogOpen(true)} aria-label="Manage Custom Fields">
           <Pencil className="w-4 h-4 mr-2" />
           Manage Custom Fields
         </Button>

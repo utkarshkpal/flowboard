@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { CustomField } from "@/app/store/useTaskStore";
-import { Trash } from "lucide-react";
+import { Check, Trash, X } from "lucide-react";
 import { useState } from "react";
 
 interface CustomFieldsEditorProps {
@@ -27,6 +27,7 @@ export default function CustomFieldsEditor({
   const [fieldType, setFieldType] = useState<CustomField["type"]>("text");
   const [defaultValue, setDefaultValue] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldToDelete, setFieldToDelete] = useState<string | null>(null);
 
   const resetForm = () => {
     setFieldName("");
@@ -34,7 +35,8 @@ export default function CustomFieldsEditor({
     setErrorMessage("");
   };
 
-  const handleAddField = () => {
+  const handleAddField = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!fieldName.trim()) {
       setErrorMessage("Field name is required");
       return;
@@ -43,38 +45,80 @@ export default function CustomFieldsEditor({
     resetForm();
   };
 
+  const confirmDeleteField = (fieldName: string) => {
+    setFieldToDelete(fieldName);
+  };
+
+  const handleConfirmDelete = () => {
+    if (fieldToDelete) {
+      onRemoveField(fieldToDelete);
+      setFieldToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setFieldToDelete(null);
+  };
+
+  const isCustomFieldsEmpty = Object.keys(customFields).length === 0;
+
   return (
     <div>
       <h3 className="text-sm font-semibold mt-8 mb-4">Custom Fields</h3>
-      <ul>
-        {Object.keys(customFields).map((key) => (
-          <li key={key} className="flex justify-between items-center mb-2">
-            <span className="text-sm">
-              {customFields[key].name}
-              <Badge variant="outline" className="ml-4">
-                {customFields[key].type}
-              </Badge>
-            </span>
-            <Trash
-              className="text-red-500 cursor-pointer w-4 h-4"
-              onClick={() => onRemoveField(key)}
-            />
-          </li>
-        ))}
-      </ul>
+      {isCustomFieldsEmpty ? (
+        <p className="text-sm text-gray-500">No custom fields added</p>
+      ) : (
+        <ul>
+          {Object.keys(customFields).map((key) => (
+            <li key={key} className="flex justify-between items-center mb-2">
+              <span className="text-sm">
+                {customFields[key].name}
+                <Badge variant="outline" className="ml-4">
+                  {customFields[key].type}
+                </Badge>
+              </span>
+              {fieldToDelete === key ? (
+                <div className="flex items-center">
+                  <span className="mr-2 text-sm">Confirm delete ?</span>
+                  <Check
+                    className="text-green-500 cursor-pointer w-4 h-4 mr-2"
+                    onClick={handleConfirmDelete}
+                    aria-label="Confirm delete"
+                  />
+                  <X
+                    className="text-red-500 cursor-pointer w-4 h-4"
+                    onClick={handleCancelDelete}
+                    aria-label="Cancel delete"
+                  />
+                </div>
+              ) : (
+                <Trash
+                  className="text-red-500 cursor-pointer w-4 h-4"
+                  onClick={() => confirmDeleteField(key)}
+                  aria-label="Delete field"
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
       <h3 className="text-sm font-semibold mt-8 mb-2">Add Custom Field</h3>
-      <div className="flex gap-2 mb-4 mt-4">
+
+      <form onSubmit={handleAddField} className="flex gap-2 mb-4 mt-4">
         <Input
           placeholder="Field Name"
           value={fieldName}
+          className={errorMessage ? "border-red-500" : ""}
           onChange={(e) => {
             setFieldName(e.target.value);
             setErrorMessage("");
           }}
+          aria-label="Field Name"
         />
         <Select
           value={fieldType}
           onValueChange={(value) => setFieldType(value as CustomField["type"])}
+          aria-label="Field Type"
         >
           <SelectTrigger>
             <SelectValue placeholder="Select Type" />
@@ -91,9 +135,14 @@ export default function CustomFieldsEditor({
             placeholder="Default Value"
             value={defaultValue}
             onChange={(e) => setDefaultValue(e.target.value)}
+            aria-label="Default Value for Number"
           />
         ) : fieldType === "checkbox" ? (
-          <Select value={defaultValue} onValueChange={(value) => setDefaultValue(value)}>
+          <Select
+            value={defaultValue}
+            onValueChange={(value) => setDefaultValue(value)}
+            aria-label="Default Value for Checkbox"
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select Default" />
             </SelectTrigger>
@@ -107,11 +156,16 @@ export default function CustomFieldsEditor({
             placeholder="Default Value"
             value={defaultValue}
             onChange={(e) => setDefaultValue(e.target.value)}
+            aria-label="Default Value for Text"
           />
         )}
-        <Button onClick={handleAddField}>Add Field</Button>
-      </div>
-      {errorMessage && <p className="text-red-500 text-xs">{errorMessage}</p>}
+        <Button type="submit">Add Field</Button>
+      </form>
+      {errorMessage && (
+        <p id="name-error" role="alert" aria-live="polite" className="text-red-500 text-xs">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }
