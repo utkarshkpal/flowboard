@@ -21,9 +21,11 @@ I took inspiration from **React Query's table implementation** while building a 
 
 1. **Clone the repository**
 
-   ```sh
    git clone https://github.com/utkarshkpal/flowboard.git
    cd flowboard
+
+   ```
+
    ```
 
 2. **Install dependencies**
@@ -78,6 +80,18 @@ I took inspiration from **React Query's table implementation** while building a 
 - **Undo/Redo functionality** using a two-stack approach.
 
 ---
+
+## ♿ **Accessibility Improvements**
+
+Ensuring accessibility was a key focus during the development of FlowBoard. Here are some of the steps taken to make the app more screen reader-friendly and improve overall accessibility:
+
+- **Semantic HTML**: Used semantic HTML elements to provide meaningful structure to the content, which helps screen readers understand the layout and purpose of different sections.
+
+- **Keyboard Navigation**: Ensured that all interactive elements are accessible via keyboard navigation, allowing users to navigate through the app using the `Tab` key and other keyboard shortcuts.
+
+- **Screen Reader Support**: Added `aria-label` to all interactive elements to provide additional context for screen reader users. Error messages are also provided for screen reader users to provide additional context for screen reader users.
+
+These improvements aim to make FlowBoard accessible to a wider audience, including users with disabilities, and ensure compliance with accessibility standards.
 
 ## 🚀 **Further Improvements**
 
