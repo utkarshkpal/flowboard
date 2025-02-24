@@ -1,4 +1,11 @@
-const tasks = [
+export type DefaultTask = {
+  id: number;
+  title: string;
+  priority: "high" | "medium" | "low" | "urgent" | "none";
+  status: "not_started" | "in_progress" | "completed";
+};
+
+const tasks: DefaultTask[] = [
   {
     id: 1,
     title: "Write project proposal",
@@ -679,4 +686,4 @@ const tasks = [
   },
 ];
 
-export default tasks;
+export { tasks };

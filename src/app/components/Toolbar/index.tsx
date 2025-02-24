@@ -1,0 +1,35 @@
+"use client";
+import { useTaskStore } from "@/app/store/useTaskStore";
+import { useEffect } from "react";
+
+function UndoRedoToolbar() {
+  const { undo, redo, undoStack, redoStack } = useTaskStore();
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.shiftKey) {
+        undo();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "z" && event.shiftKey) {
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
+  return (
+    <div className="flex gap-4 p-4">
+      <button disabled={!canUndo} onClick={undo} className="px-4 py-2 bg-gray-200 rounded">
+        Undo
+      </button>
+      <button disabled={!canRedo} onClick={redo} className="px-4 py-2 bg-gray-200 rounded">
+        Redo
+      </button>
+    </div>
+  );
+}
+
+export default UndoRedoToolbar;

@@ -1,5 +1,6 @@
-import tasks from "@/app/data/task";
+import { DefaultTask, tasks } from "@/app/data/task";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type CustomField = {
   name: string;
@@ -19,123 +20,87 @@ type TaskStore = {
   tasks: Task[];
   customFields: Record<string, CustomField>;
   editingTaskId: string | null;
+  undoStack: Task[][];
+  redoStack: Task[][];
+  isHydrated: boolean;
+  setEditingTaskId: (id: string | null) => void;
   addTask: (task: Omit<Task, "id">) => void;
   updateTask: (id: number, updatedTask: Partial<Task>) => void;
   deleteTask: (id: number) => void;
-  setEditingTaskId: (id: string | null) => void;
   addCustomField: (field: CustomField) => void;
   removeCustomField: (fieldName: string) => void;
+  undo: () => void;
+  redo: () => void;
 };
 
-//todo : add global validation for task
+const getDefaultTasks = (): Task[] => {
+  return tasks.map((task: DefaultTask) => {
+    return {
+      ...task,
+      customFields: [] as CustomField[],
+    };
+  });
+};
+export const useTaskStore = create<TaskStore>()(
+  persist(
+    (set) => ({
+      tasks: getDefaultTasks(),
+      customFields: {},
+      editingTaskId: null,
+      undoStack: [],
+      redoStack: [],
+      isHydrated: false,
 
-export const useTaskStore = create<TaskStore>((set) => {
-  const logChange = (action: string, beforeState: TaskStore, afterState: TaskStore) => {
-    console.log(`%cAction: ${action}`, "color: blue; font-weight: bold;");
-    console.log(
-      "%cBefore State:",
-      "color: red; font-weight: bold;",
-      JSON.parse(JSON.stringify(beforeState)),
-    );
-    console.log(
-      "%cAfter State:",
-      "color: green; font-weight: bold;",
-      JSON.parse(JSON.stringify(afterState)),
-    );
-  };
+      setEditingTaskId: (id) => set({ editingTaskId: id }),
 
-  const loadTasksFromLocalStorage = (): Task[] => {
-    const tasksJSON = localStorage.getItem("tasks");
-    const defaultTasks = tasks;
-    const loadedTasks = tasksJSON ? JSON.parse(tasksJSON) : defaultTasks;
-    loadedTasks.forEach((task: Task) => {
-      if (!task.customFields) {
-        task.customFields = [];
-      }
-    });
-    return loadedTasks;
-  };
+      addTask: (task) => {
+        set((state) => {
+          const newTask = {
+            id: state.tasks.length + 1,
+            ...task,
+            customFields: Object.values(state.customFields),
+          };
+          return {
+            undoStack: [...state.undoStack, state.tasks],
+            redoStack: [],
+            tasks: [newTask, ...state.tasks],
+          };
+        });
+      },
 
-  const loadCustomFieldsFromLocalStorage = (): Record<string, CustomField> => {
-    const customFieldsJSON = localStorage.getItem("customFields");
-    const fields = customFieldsJSON ? JSON.parse(customFieldsJSON) : {};
-    return fields;
-  };
-
-  const saveTasksToLocalStorage = (tasks: Task[]) => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  };
-
-  const saveCustomFieldsToLocalStorage = (customFields: Record<string, CustomField>) => {
-    localStorage.setItem("customFields", JSON.stringify(customFields));
-  };
-
-  return {
-    tasks: loadTasksFromLocalStorage(),
-    customFields: loadCustomFieldsFromLocalStorage(),
-    editingTaskId: null,
-    editingTask: null,
-    setEditingTaskId: (id) =>
-      set((state) => {
-        const newState = { ...state, editingTaskId: id };
-        logChange("setEditingTaskId", state, newState);
-        return newState;
-      }),
-    addTask: (task) =>
-      set((state) => {
-        const taskWithCustomFields = {
-          id: state.tasks.length + 1,
-          ...task,
-          customFields: Object.values(state.customFields),
-        };
-        const newState = {
-          ...state,
-          tasks: [taskWithCustomFields, ...state.tasks],
-        };
-
-        logChange("addTask", state, newState);
-        saveTasksToLocalStorage(newState.tasks);
-        return newState;
-      }),
-    updateTask: (id, updatedTask) =>
-      set((state) => {
-        const newState = {
-          ...state,
+      updateTask: (id, updatedTask) => {
+        set((state) => ({
+          undoStack: [...state.undoStack, state.tasks],
+          redoStack: [],
           tasks: state.tasks.map((task) => (task.id === id ? { ...task, ...updatedTask } : task)),
           editingTaskId: null,
-        };
-        logChange("updateTask", state, newState);
-        saveTasksToLocalStorage(newState.tasks);
-        return newState;
-      }),
-    deleteTask: (id) =>
-      set((state) => {
-        const newState = { ...state, tasks: state.tasks.filter((task) => task.id !== id) };
-        logChange("deleteTask", state, newState);
-        saveTasksToLocalStorage(newState.tasks);
-        return newState;
-      }),
-    addCustomField: (field) =>
-      set((state) => {
-        const newState = {
-          ...state,
+        }));
+      },
+
+      deleteTask: (id) => {
+        set((state) => ({
+          undoStack: [...state.undoStack, state.tasks],
+          redoStack: [],
+          tasks: state.tasks.filter((task) => task.id !== id),
+        }));
+      },
+
+      addCustomField: (field) => {
+        set((state) => ({
+          undoStack: [...state.undoStack, state.tasks],
+          redoStack: [],
           customFields: { ...state.customFields, [field.name]: field },
-          tasks: state.tasks.map((task) => {
-            return {
-              ...task,
-              customFields: [...task.customFields, field],
-            };
-          }),
-        };
-        logChange("addCustomField", state, newState);
-        saveTasksToLocalStorage(newState.tasks);
-        saveCustomFieldsToLocalStorage(newState.customFields);
-        return newState;
-      }),
-    removeCustomField: (fieldName) =>
-      set((state) => {
-        const newState = {
-          ...state,
+          tasks: state.tasks.map((task) => ({
+            ...task,
+            customFields: [...task.customFields, field],
+          })),
+        }));
+      },
+
+      removeCustomField: (fieldName) => {
+        set((state) => ({
+          undoStack: [...state.undoStack, state.tasks],
+          redoStack: [],
           customFields: Object.fromEntries(
             Object.entries(state.customFields).filter(([key]) => key !== fieldName),
           ),
@@ -143,11 +108,41 @@ export const useTaskStore = create<TaskStore>((set) => {
             ...task,
             customFields: task.customFields.filter((field) => field.name !== fieldName),
           })),
-        };
-        logChange("removeCustomField", state, newState);
-        saveTasksToLocalStorage(newState.tasks);
-        saveCustomFieldsToLocalStorage(newState.customFields);
-        return newState;
-      }),
-  };
-});
+        }));
+      },
+
+      undo: () => {
+        set((state) => {
+          if (state.undoStack.length === 0) return state;
+          const previousState = state.undoStack[state.undoStack.length - 1];
+          return {
+            tasks: previousState,
+            undoStack: state.undoStack.slice(0, -1),
+            redoStack: [...state.redoStack, state.tasks],
+          };
+        });
+      },
+
+      redo: () => {
+        set((state) => {
+          if (state.redoStack.length === 0) return state;
+          const nextState = state.redoStack[state.redoStack.length - 1];
+          return {
+            tasks: nextState,
+            redoStack: state.redoStack.slice(0, -1),
+            undoStack: [...state.undoStack, state.tasks],
+          };
+        });
+      },
+    }),
+
+    {
+      name: "task-store",
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isHydrated = true; // Set hydration flag when store is restored
+        }
+      },
+    },
+  ),
+);

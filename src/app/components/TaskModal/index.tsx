@@ -13,6 +13,7 @@ import {
 import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import clsx from "clsx";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 export default function TaskModal({ task }: { task?: Task }) {
@@ -59,6 +60,7 @@ export default function TaskModal({ task }: { task?: Task }) {
     <Dialog open={isDialogOpen} onOpenChange={(open) => handleOpenChange(open)}>
       <DialogTrigger asChild>
         <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
           Create Task
         </Button>
       </DialogTrigger>

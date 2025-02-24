@@ -1,16 +1,5 @@
-import { ReactNode, useState } from "react";
-
-type ColumnConfig<T> =
-  | {
-      id: keyof T;
-      accessor: (row: T) => string;
-      sortFn?: (a: T, b: T) => number;
-    }
-  | {
-      id: string;
-      cell: (row: T) => ReactNode;
-      sortFn?: (a: T, b: T) => number;
-    };
+import { useState } from "react";
+import { ColumnConfig } from "./types";
 
 export function createColumnHelper<T>() {
   return {

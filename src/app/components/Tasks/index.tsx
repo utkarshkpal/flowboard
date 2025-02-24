@@ -1,14 +1,10 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import CustomFieldsEditor from "@/app/components/CustomField";
 import { Button } from "@/app/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/app/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/app/components/ui/dialog";
 import { Input } from "@/app/components/ui/input";
 import {
   Select,
@@ -17,25 +13,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table/useTable";
+import { createColumnHelper, useReactTable } from "@/app/hooks/table/useTable";
 import { CustomField, Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ClipboardCheck,
-  Clock,
-  Edit,
-  FileQuestion,
-  Trash,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit, FileQuestion, Pencil, Trash } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import TaskModal from "../TaskModal";
 import { priorityOrder, statusOrder } from "./constants";
+import DeleteDialog from "./DeleteDialog";
 import Filters from "./filters";
 import Pagination from "./pagination";
-
+import TableLoader from "./TableLoader";
+import TaskTable from "./TaskTable";
 const columnHelper = createColumnHelper<Task>();
 
 function Tasks() {
@@ -43,6 +33,7 @@ function Tasks() {
     tasks,
     customFields,
     editingTaskId,
+    isHydrated,
     setEditingTaskId,
     updateTask,
     deleteTask,
@@ -235,7 +226,7 @@ function Tasks() {
       .join(" ");
   };
 
-  const renderCell = (columnId: string, row: { original: Task }) => {
+  const renderCell = (columnId: string, row: any) => {
     const column = columns.find((col) => col.id === columnId);
     if (!column) return null;
 
@@ -291,7 +282,7 @@ function Tasks() {
             </Button>
           );
         default:
-          const field = row.original?.customFields?.find((f) => f.name === columnId);
+          const field = row.original?.customFields?.find((f: CustomField) => f.name === columnId);
           if (field) {
             switch (field.type) {
               case "text":
@@ -361,7 +352,7 @@ function Tasks() {
             </div>
           );
         default:
-          const field = row.original?.customFields?.find((f) => f.name === columnId);
+          const field = row.original?.customFields?.find((f: CustomField) => f.name === columnId);
           if (field) {
             if (field.value === undefined || field.value === null || field.value === "") {
               return <FileQuestion className="w-4 h-4 text-gray-500" />;
@@ -400,11 +391,18 @@ function Tasks() {
 
   return (
     <div className="p-4">
-      <Button onClick={() => setIsCustomFieldDialogOpen(true)}>Manage Custom Fields</Button>
+      <div className="flex justify-between gap-2 mb-4">
+        <TaskModal />
+        <Button onClick={() => setIsCustomFieldDialogOpen(true)}>
+          <Pencil className="w-4 h-4 mr-2" />
+          Manage Custom Fields
+        </Button>
+      </div>
 
       <Dialog open={isCustomFieldDialogOpen} onOpenChange={setIsCustomFieldDialogOpen}>
         <DialogContent>
           <DialogTitle>Manage Custom Fields</DialogTitle>
+
           <CustomFieldsEditor
             customFields={customFields}
             onAddField={handleAddField}
@@ -427,47 +425,16 @@ function Tasks() {
         onFilterChange={handleFilterChange}
       />
 
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const column = columns.find((col) => col.id === header.id);
-                const isSortable = column && column.sortFn;
-                return (
-                  <th
-                    key={header.id}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                      isSortable ? "cursor-pointer" : ""
-                    }`}
-                    onClick={() => isSortable && table.toggleSortOrder(header.id as keyof Task)}
-                  >
-                    <div className="flex items-center">
-                      {header.id === "title" && <ClipboardCheck className="mr-2" />}
-                      {header.id === "priority" && <Clock className="mr-2" />}
-                      {header.id === "actions"
-                        ? "Actions"
-                        : capitalize(flexRender(header.render()))}
-                      {isSortable && renderSortIcon(header.id)}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {columns.map((column) => (
-                <td key={column.id} className="px-6 py-4 whitespace-nowrap">
-                  {renderCell(column.id, row)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {isHydrated ? (
+        <TaskTable
+          tasks={filteredTasks}
+          columns={columns}
+          renderCell={renderCell}
+          renderSortIcon={renderSortIcon}
+        />
+      ) : (
+        <TableLoader />
+      )}
       <Pagination
         currentPage={table.currentPage}
         totalPages={table.totalPages}
@@ -476,22 +443,11 @@ function Tasks() {
         pageSize={table.pageSize}
       />
 
-      {isDeleteDialogOpen && (
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Delete</DialogTitle>
-            </DialogHeader>
-            <p>Are you sure you want to delete this task?</p>
-            <DialogFooter>
-              <Button className="bg-red-500 text-white" onClick={confirmDelete}>
-                Delete
-              </Button>
-              <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      <DeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
