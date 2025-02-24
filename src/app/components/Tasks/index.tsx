@@ -1,6 +1,5 @@
-"use client";
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
 import CustomFieldsEditor from "@/app/components/CustomField";
 import { Button } from "@/app/components/ui/button";

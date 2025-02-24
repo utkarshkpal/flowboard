@@ -11,3 +11,10 @@ export type ColumnConfig<T> =
       cell: (row: T) => ReactNode;
       sortFn?: (a: T, b: T) => number;
     };
+
+export type Row<T> = {
+  original: T;
+  index: number;
+  depth: number;
+  subRows: Row<T>[];
+};
