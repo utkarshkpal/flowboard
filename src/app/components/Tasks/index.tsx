@@ -18,7 +18,7 @@ import { CustomField, Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
 import { ArrowDown, ArrowUp, ArrowUpDown, Edit, FileQuestion, Pencil, Trash } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import TaskModal from "../TaskModal";
 import { priorityOrder, statusOrder } from "./constants";
 import DeleteDialog from "./DeleteDialog";
@@ -70,7 +70,7 @@ function Tasks() {
     router.replace(`?${query.toString()}`);
   }, [searchText, status, priority, router]);
 
-  const handleFilterChange = (type: string, value: string) => {
+  const handleFilterChange = useCallback((type: string, value: string) => {
     switch (type) {
       case "text":
         setSearchText(value);
@@ -84,7 +84,7 @@ function Tasks() {
       default:
         break;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (editingTask) {
@@ -103,53 +103,74 @@ function Tasks() {
     }
   }, [editingTask]);
 
-  const handleEditClick = (task: Task) => {
-    setEditingTaskId(task.id.toString());
-  };
+  const handleEditClick = useCallback(
+    (task: Task) => {
+      setEditingTaskId(task.id.toString());
+    },
+    [setEditingTaskId],
+  );
 
-  const handleSaveClick = (taskId: string) => {
-    if (!localTitle.trim()) {
-      setTitleError("Title is required.");
-      return;
-    } else {
-      setTitleError("");
-    }
+  const handleSaveClick = useCallback(
+    (taskId: string) => {
+      if (!localTitle.trim()) {
+        setTitleError("Title is required.");
+        return;
+      } else {
+        setTitleError("");
+      }
 
-    if (editingTaskId) {
-      updateTask(Number(taskId), {
-        title: localTitle,
-        priority: localPriority,
-        status: localStatus,
-        customFields: Object.entries(localCustomFields).map(([name, value]) => ({
-          name,
-          value,
-          type: customFields[name]?.type || "text",
-        })),
-      });
-    }
-    setEditingTaskId(null);
-  };
+      if (editingTaskId) {
+        updateTask(Number(taskId), {
+          title: localTitle,
+          priority: localPriority,
+          status: localStatus,
+          customFields: Object.entries(localCustomFields).map(([name, value]) => ({
+            name,
+            value,
+            type: customFields[name]?.type || "text",
+          })),
+        });
+      }
+      setEditingTaskId(null);
+    },
+    [
+      localTitle,
+      localPriority,
+      localStatus,
+      localCustomFields,
+      editingTaskId,
+      updateTask,
+      customFields,
+      setEditingTaskId,
+    ],
+  );
 
-  const handleDeleteClick = (taskId: string) => {
+  const handleDeleteClick = useCallback((taskId: string) => {
     setTaskToDelete(taskId);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (taskToDelete) {
       deleteTask(Number(taskToDelete));
       setTaskToDelete(null);
     }
     setIsDeleteDialogOpen(false);
-  };
+  }, [taskToDelete, deleteTask]);
 
-  const handleAddField = (field: CustomField) => {
-    addCustomField(field);
-  };
+  const handleAddField = useCallback(
+    (field: CustomField) => {
+      addCustomField(field);
+    },
+    [addCustomField],
+  );
 
-  const handleRemoveField = (fieldName: string) => {
-    removeCustomField(fieldName);
-  };
+  const handleRemoveField = useCallback(
+    (fieldName: string) => {
+      removeCustomField(fieldName);
+    },
+    [removeCustomField],
+  );
 
   const columns = [
     columnHelper.accessor({
@@ -390,10 +411,13 @@ function Tasks() {
     }
   };
 
-  const handlePageSizeChange = (pageSize: number) => {
-    table.setPageSize(pageSize);
-    table.setCurrentPage(1);
-  };
+  const handlePageSizeChange = useCallback(
+    (pageSize: number) => {
+      table.setPageSize(pageSize);
+      table.setCurrentPage(1);
+    },
+    [table],
+  );
 
   return (
     <div className="p-4">

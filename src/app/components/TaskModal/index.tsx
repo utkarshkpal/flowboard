@@ -14,7 +14,7 @@ import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import clsx from "clsx";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 const priorityOptions = [
   { label: "Low", value: "low" },
@@ -39,37 +39,43 @@ export default function TaskModal({ task }: { task?: Task }) {
 
   const { addTask } = useTaskStore();
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      resetForm();
-    }
-    setIsDialogOpen(open);
-  };
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTitle("");
     setPriority("medium");
     setStatus("not_started");
     setTitleError("");
-  };
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    let hasError = false;
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        resetForm();
+      }
+      setIsDialogOpen(open);
+    },
+    [resetForm],
+  );
 
-    if (!title.trim()) {
-      setTitleError("Title is required.");
-      hasError = true;
-    } else {
-      setTitleError("");
-    }
+  const handleSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      let hasError = false;
 
-    if (hasError) return;
+      if (!title.trim()) {
+        setTitleError("Title is required.");
+        hasError = true;
+      } else {
+        setTitleError("");
+      }
 
-    addTask({ title, priority, status, customFields: [] });
-    resetForm();
-    setIsDialogOpen(false);
-  };
+      if (hasError) return;
+
+      addTask({ title, priority, status, customFields: [] });
+      resetForm();
+      setIsDialogOpen(false);
+    },
+    [title, priority, status, addTask, resetForm],
+  );
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={(open) => handleOpenChange(open)}>

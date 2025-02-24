@@ -24,10 +24,10 @@ function UndoRedoToolbar() {
   return (
     <div className="flex gap-4 p-4">
       <Button disabled={!canUndo} onClick={undo} className="px-4 py-2  rounded">
-        <Undo className="w-4 h-4 mr-2" />
+        <Undo aria-label="Undo" className="w-4 h-4 mr-2" />
       </Button>
       <Button disabled={!canRedo} onClick={redo} className="px-4 py-2  rounded">
-        <Redo className="w-4 h-4 mr-2" />
+        <Redo aria-label="Redo" className="w-4 h-4 mr-2" />
       </Button>
     </div>
   );

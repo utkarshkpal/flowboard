@@ -10,7 +10,7 @@ import {
 } from "@/app/components/ui/select";
 import { CustomField } from "@/app/store/useTaskStore";
 import { Check, Trash, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 interface CustomFieldsEditorProps {
   customFields: Record<string, CustomField>;
@@ -29,36 +29,39 @@ export default function CustomFieldsEditor({
   const [errorMessage, setErrorMessage] = useState("");
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFieldName("");
     setDefaultValue("");
     setErrorMessage("");
-  };
+  }, []);
 
-  const handleAddField = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!fieldName.trim()) {
-      setErrorMessage("Field name is required");
-      return;
-    }
-    onAddField({ name: fieldName, type: fieldType, value: defaultValue });
-    resetForm();
-  };
+  const handleAddField = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!fieldName.trim()) {
+        setErrorMessage("Field name is required");
+        return;
+      }
+      onAddField({ name: fieldName, type: fieldType, value: defaultValue });
+      resetForm();
+    },
+    [fieldName, fieldType, defaultValue, onAddField, resetForm],
+  );
 
-  const confirmDeleteField = (fieldName: string) => {
+  const confirmDeleteField = useCallback((fieldName: string) => {
     setFieldToDelete(fieldName);
-  };
+  }, []);
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = useCallback(() => {
     if (fieldToDelete) {
       onRemoveField(fieldToDelete);
       setFieldToDelete(null);
     }
-  };
+  }, [fieldToDelete, onRemoveField]);
 
-  const handleCancelDelete = () => {
+  const handleCancelDelete = useCallback(() => {
     setFieldToDelete(null);
-  };
+  }, []);
 
   const isCustomFieldsEmpty = Object.keys(customFields).length === 0;
 
