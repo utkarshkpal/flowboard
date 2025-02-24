@@ -12,10 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { createColumnHelper, useReactTable } from "@/app/hooks/table/useTable";
+import { createColumnHelper, flexRender, useReactTable } from "@/app/hooks/table/useTable";
 import { CustomField, Task, useTaskStore } from "@/app/store/useTaskStore";
 import { capitalize } from "lodash";
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit, FileQuestion, Pencil, Trash } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ClipboardCheck,
+  Clock,
+  Edit,
+  FileQuestion,
+  Pencil,
+  Trash,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import TaskModal from "../TaskModal";
@@ -24,7 +34,6 @@ import DeleteDialog from "./DeleteDialog";
 import Filters from "./filters";
 import Pagination from "./pagination";
 import TableLoader from "./TableLoader";
-import TaskTable from "./TaskTable";
 const columnHelper = createColumnHelper<Task>();
 
 function Tasks() {
@@ -58,8 +67,6 @@ function Tasks() {
   const [localCustomFields, setLocalCustomFields] = useState<
     Record<string, string | number | boolean>
   >({});
-
-  console.log("render");
 
   useEffect(() => {
     const query = new URLSearchParams();
@@ -412,6 +419,7 @@ function Tasks() {
 
   const handlePageSizeChange = useCallback(
     (pageSize: number) => {
+      console.log("pageSize", pageSize);
       table.setPageSize(pageSize);
       table.setCurrentPage(1);
     },
@@ -461,12 +469,47 @@ function Tasks() {
       />
 
       {isHydrated ? (
-        <TaskTable
-          tasks={filteredTasks}
-          columns={columns}
-          renderCell={renderCell}
-          renderSortIcon={renderSortIcon}
-        />
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  const column = columns.find((col) => col.id === header.id);
+                  const isSortable = column && column.sortFn;
+                  return (
+                    <th
+                      key={header.id}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                        isSortable ? "cursor-pointer" : ""
+                      }`}
+                      onClick={() => isSortable && table.toggleSortOrder(header.id as keyof Task)}
+                    >
+                      <div className="flex items-center">
+                        {header.id === "title" && <ClipboardCheck className="mr-2" />}
+                        {header.id === "priority" && <Clock className="mr-2" />}
+                        {header.id === "actions"
+                          ? "Actions"
+                          : capitalize(flexRender(header.render()))}
+                        {isSortable && renderSortIcon(header.id)}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {columns.map((column) => (
+                  <td key={column.id} className="px-6 py-4 whitespace-nowrap">
+                    {renderCell(column.id, row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       ) : (
         <TableLoader />
       )}
