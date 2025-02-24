@@ -21,11 +21,9 @@ I took inspiration from **React Query's table implementation** while building a 
 
 1. **Clone the repository**
 
+   ```
    git clone https://github.com/utkarshkpal/flowboard.git
    cd flowboard
-
-   ```
-
    ```
 
 2. **Install dependencies**
